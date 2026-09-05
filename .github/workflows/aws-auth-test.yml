@@ -1,0 +1,28 @@
+name: Phase 1 - AWS Auth Test
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test-aws-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::998631801915:role/GitHubActionsSkillUpRole
+          aws-region: ap-south-1
+
+      - name: Verify AWS authentication
+        run: |
+          echo "Testing STS Caller Identity..."
+          aws sts get-caller-identity
