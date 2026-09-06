@@ -21,8 +21,12 @@ def _is_authorized(req) -> bool:
 
 @app.before_request
 def authorize():
+    if request.path == "/health":
+        return None
+
     if not _is_authorized(request):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
+
     return None
 
 
