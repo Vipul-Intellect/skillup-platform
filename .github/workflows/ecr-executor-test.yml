@@ -1,1 +1,49 @@
 
+name: Phase 3 - Executor ECR Test
+
+on: workflow_dispatch
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: skillup-executor
+
+jobs:
+  test-executor-ecr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::998631801915:role/GitHubActionsSkillUpRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build executor image
+        run: |
+          docker build \
+            -t $ECR_REPOSITORY:test-${GITHUB_SHA} \
+            ./executor_service
+      - name: Tag image for ECR
+        run: |
+          docker tag \
+            $ECR_REPOSITORY:test-${GITHUB_SHA} \
+            998631801915.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:test-${GITHUB_SHA}
+      - name: Push image to ECR
+        run: |
+          docker push \
+            998631801915.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:test-${GITHUB_SHA}
+      - name: Verify image exists in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="test-${GITHUB_SHA}"
