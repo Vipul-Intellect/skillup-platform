@@ -1,4 +1,7 @@
+import os
+import json
 from google.cloud import firestore
+from google.oauth2 import service_account
 from datetime import datetime, timedelta, timezone
 from config.settings import settings
 from utils.logger import get_logger
@@ -14,11 +17,25 @@ def _firestore_timeout_seconds():
 def init_firestore():
     global db
     try:
-        db = firestore.Client()
-        logger.info("Firestore client initialized successfully")
+        service_account_json = os.environ.get("FIRESTORE_SERVICE_ACCOUNT_JSON")
+        
+        if service_account_json:
+            try:
+                creds_info = json.loads(service_account_json)
+                credentials = service_account.Credentials.from_service_account_info(creds_info)
+            except Exception as parse_error:
+                logger.error("Failed to initialize Firestore: Invalid FIRESTORE_SERVICE_ACCOUNT_JSON format or content")
+                raise RuntimeError("Firestore initialization failed due to invalid credentials configuration") from parse_error
+                
+            db = firestore.Client(credentials=credentials)
+            logger.info("Firestore client initialized successfully with injected credentials")
+        else:
+            db = firestore.Client()
+            logger.info("Firestore client initialized successfully with Application Default Credentials (ADC)")
+            
         return db
-    except Exception as e:
-        logger.error(f"Failed to initialize Firestore: {e}")
+    except Exception:
+        logger.error("Failed to initialize Firestore. (Underlying exception hidden for security)")
         raise
 
 def get_db():
