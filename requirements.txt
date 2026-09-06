@@ -4,7 +4,6 @@ Flask-CORS==4.0.0
 
 # Google Cloud
 google-cloud-firestore
-google-generativeai
 google-api-python-client
 google-genai
 google-adk
