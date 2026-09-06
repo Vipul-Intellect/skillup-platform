@@ -1,0 +1,544 @@
+Act as a senior AI engineer and production cloud-migration engineer working with me on the existing SkillUp multi-agent AI project.
+
+Your job right now is to UNDERSTAND the current project and migration state before doing anything.
+
+Do NOT modify code, architecture, infrastructure, GitHub workflows, Dockerfiles, configuration, or dependencies unless I explicitly ask you to.
+
+Do not blindly agree with my decisions. If you identify a technically incorrect, risky, unnecessary, or inefficient decision, explain:
+1. What is wrong
+2. Why it is wrong
+3. The impact
+4. The better option
+Then let me make the final decision.
+
+==================================================
+PROJECT
+==================================================
+
+Repository:
+
+https://github.com/Vipul-Intellect/skillup-platform
+
+This is an existing multi-agent AI application called SkillUp.
+
+It was originally deployed on GCP and is now being migrated to AWS because the GCP credits are exhausted.
+
+The MOST IMPORTANT RULE:
+
+AWS is replacing the hosting/infrastructure layer.
+
+We are NOT redesigning the application.
+
+==================================================
+EXISTING APPLICATION ARCHITECTURE
+==================================================
+
+The existing application uses:
+
+- Google ADK
+- Gemini
+- MCP
+- A2A
+- Flask
+- Orchestrator Agent
+- Learning Agent
+- Evaluator Agent
+- Existing MCP tools/tool servers
+- Existing prompts
+- Existing APIs
+- Existing application workflows
+- Firestore
+- YouTube API
+- RapidAPI/JSearch
+- Separate code-executor service
+- Monaco/code-editor functionality
+
+These technologies and application behaviors must remain unchanged.
+
+DO NOT:
+- Replace Gemini with Amazon Bedrock
+- Replace Google ADK
+- Replace MCP
+- Replace A2A
+- Replace Firestore with DynamoDB
+- Rewrite the agents
+- Rewrite the prompts
+- Change the application workflow
+- Remove existing functionality
+- Introduce a new architecture just because AWS provides another service
+
+The objective is:
+
+"Run the same existing application reliably on AWS."
+
+==================================================
+CURRENT APPLICATION STRUCTURE
+==================================================
+
+The repository contains approximately:
+
+- a2a/
+- agents/
+- api/
+- config/
+- database/
+- executor_service/
+- scripts/
+- static/
+- templates/
+- tools/
+- utils/
+- Dockerfile
+- requirements.txt
+- .dockerignore
+- .gitignore
+- .env.example
+- README.md
+
+There are TWO containerized services:
+
+1. Main SkillUp application
+   - Root Dockerfile
+   - Flask application
+   - Existing agents/API/frontend/etc.
+
+2. Executor service
+   - executor_service/Dockerfile
+   - executor_service/requirements.txt
+   - executor_service/app.py
+   - executor_service/runtime.py
+   - Separate service for code validation/execution
+
+The executor must remain a separate service.
+
+==================================================
+AWS MIGRATION DECISIONS
+==================================================
+
+AWS region:
+
+ap-south-1 (Mumbai)
+
+We decided to use ECS/Fargate, with ECS Express Mode being the preferred simpler deployment approach.
+
+Reason:
+
+The user is new to AWS and wants an architecture closer to the simplicity of GCP Cloud Run.
+
+We explicitly do NOT want unnecessary AWS complexity.
+
+Conceptually:
+
+GitHub
+  ↓
+GitHub Actions
+  ↓
+ECR
+  ↓
+ECS Express Mode / Fargate
+  ↓
+Existing application
+
+There will be two ECS services:
+
+1. Main SkillUp application
+2. Executor service
+
+There will be two ECR repositories:
+
+1. skillup-agent
+2. skillup-executor
+
+IMPORTANT:
+
+ECR repositories store Docker images.
+
+They are NOT the services themselves.
+
+ECS/Fargate runs the services.
+
+==================================================
+FIRESTORE DECISION
+==================================================
+
+Firestore remains in GCP.
+
+We are NOT migrating Firestore to DynamoDB.
+
+The AWS-hosted application will communicate with the existing Firestore database over authenticated access.
+
+Current Firestore:
+
+Project:
+multi-agent-492316
+
+Database:
+(default)
+
+Location:
+asia-south1 (Mumbai)
+
+The existing application functionality and Firestore data model should remain unchanged.
+
+==================================================
+STORAGE
+==================================================
+
+S3 may be used for persistent uploaded files/resumes where appropriate.
+
+However:
+
+Do not add S3 unnecessarily just because AWS provides it.
+
+The existing application currently processes resume uploads in its existing flow.
+
+If persistent object storage is required during the migration, evaluate the smallest safe change.
+
+Do not modify application behavior without approval.
+
+==================================================
+SECRETS
+==================================================
+
+Production secrets must NOT be committed to GitHub.
+
+The intended AWS approach is:
+
+AWS Secrets Manager
+        ↓
+ECS service
+        ↓
+Environment/configuration
+        ↓
+Existing application
+
+Google service-account credentials may be required so AWS-hosted containers can access Firestore.
+
+The preferred simple SIH approach is:
+
+Google service-account JSON credentials
+stored securely in AWS Secrets Manager.
+
+Do NOT expose credentials in:
+- GitHub
+- Dockerfiles
+- source code
+- workflow YAML
+- public repositories
+
+==================================================
+AWS WORK ALREADY COMPLETED
+==================================================
+
+These parts have already been configured.
+
+1. AWS CLI installed and working.
+
+2. AWS region configured:
+
+ap-south-1
+
+3. AWS authentication through AWS CLI has been tested successfully.
+
+4. Two private ECR repositories were created:
+
+skillup-agent
+
+skillup-executor
+
+5. GitHub OIDC provider was created:
+
+https://token.actions.githubusercontent.com
+
+Audience:
+
+sts.amazonaws.com
+
+6. IAM role created:
+
+GitHubActionsSkillUpRole
+
+Role ARN:
+
+arn:aws:iam::998631801915:role/GitHubActionsSkillUpRole
+
+7. The IAM trust relationship restricts GitHub Actions to:
+
+GitHub organization:
+Vipul-Intellect
+
+Repository:
+skillup-platform
+
+Branch:
+main
+
+8. IAM inline policy created:
+
+SkillUpECRPushPolicy
+
+It currently grants ECR permissions for:
+
+skillup-agent
+
+skillup-executor
+
+The policy includes the required ECR image upload operations and ECR authorization token access.
+
+IMPORTANT:
+
+The IAM role currently has ECR-related permissions only.
+
+We have NOT yet added ECS deployment permissions.
+
+That is intentional.
+
+We want to test each phase before expanding permissions.
+
+==================================================
+GITHUB ACTIONS PLAN
+==================================================
+
+The final desired CI/CD behavior is:
+
+If main application code changes:
+
+    GitHub push
+       ↓
+    Main workflow
+       ↓
+    Build skillup-agent
+       ↓
+    Push to ECR
+       ↓
+    Deploy/update main ECS service
+
+If only executor_service changes:
+
+    GitHub push
+       ↓
+    Executor workflow
+       ↓
+    Build skillup-executor
+       ↓
+    Push to ECR
+       ↓
+    Deploy/update executor ECS service
+
+If both change:
+
+    Both workflows run automatically.
+
+There must be NO manual step where the developer chooses which image to rebuild.
+
+We prefer two simple workflows with GitHub path filters rather than unnecessarily complicated change-detection scripts.
+
+Potential workflow structure:
+
+.github/workflows/
+    main-app.yml
+    executor.yml
+
+We had temporarily considered creating:
+
+aws-auth-test.yml
+
+for testing GitHub → AWS authentication.
+
+==================================================
+CURRENT MIGRATION STATUS
+==================================================
+
+COMPLETE:
+
+[✓] Existing project architecture understood
+[✓] AWS account configured
+[✓] AWS region selected: ap-south-1
+[✓] AWS CLI installed
+[✓] AWS CLI authentication tested
+[✓] ECR repository: skillup-agent
+[✓] ECR repository: skillup-executor
+[✓] GitHub OIDC provider
+[✓] GitHub IAM role
+[✓] GitHub → AWS trust relationship
+[✓] ECR push policy
+
+NOT YET VERIFIED:
+
+[ ] GitHub Actions can actually assume the IAM role
+[ ] GitHub Actions → ECR authentication
+[ ] Main Docker image builds in GitHub Actions
+[ ] Main image pushes successfully to skillup-agent
+[ ] Executor Docker image builds in GitHub Actions
+[ ] Executor image pushes successfully to skillup-executor
+[ ] ECS/Fargate main service created
+[ ] Main container starts successfully
+[ ] Main /health works on AWS
+[ ] Executor ECS/Fargate service created
+[ ] Executor /health works
+[ ] Main → executor communication
+[ ] AWS → Firestore authentication
+[ ] AWS → Gemini connectivity
+[ ] Other external APIs
+[ ] Secrets Manager integration
+[ ] CloudWatch logging
+[ ] Complete student workflow
+[ ] Automatic ECS deployment from GitHub Actions
+
+==================================================
+TESTING STRATEGY
+==================================================
+
+We are NOT building a giant QA framework.
+
+We do NOT need hundreds of unnecessary unit tests.
+
+We do NOT need 100% code coverage.
+
+We do NOT want to spend days creating tests that don't help the migration.
+
+We only need focused migration verification.
+
+The approach is:
+
+PHASE 1
+Test GitHub Actions → AWS OIDC authentication.
+
+PHASE 2
+Test GitHub Actions → ECR.
+
+Test main image separately.
+
+Test executor image separately.
+
+PHASE 3
+Test main application deployment on ECS/Fargate/Express Mode.
+
+PHASE 4
+Test executor deployment.
+
+PHASE 5
+Test service-to-service communication.
+
+PHASE 6
+Test AWS-hosted application connectivity to:
+- Firestore
+- Gemini
+- existing external APIs
+
+PHASE 7
+Run one complete real student journey through the application.
+
+PHASE 8
+Only after everything above works, finalize automatic CI/CD deployment.
+
+Each phase must be:
+
+TEST
+→ VERIFY
+→ FIX IF NECESSARY
+→ RETEST
+→ PROCEED
+
+Never assume something works simply because the AWS console configuration exists.
+
+==================================================
+CURRENT IMMEDIATE TASK
+==================================================
+
+We are currently at:
+
+PHASE 1:
+GitHub Actions → AWS authentication.
+
+The next thing we want to do is create a very small temporary GitHub Actions workflow that proves:
+
+GitHub Actions
+    ↓
+GitHub OIDC
+    ↓
+GitHubActionsSkillUpRole
+    ↓
+AWS STS
+    ↓
+successful AWS identity response
+
+Nothing else.
+
+Do NOT build Docker images yet.
+
+Do NOT configure ECS yet.
+
+Do NOT add ECS permissions yet.
+
+Do NOT modify application code.
+
+Do NOT create the full CI/CD pipeline yet.
+
+==================================================
+HOW YOU SHOULD WORK WITH ME
+==================================================
+
+I want to work phase-by-phase.
+
+Before every significant action:
+
+1. Inspect the actual repository/current configuration.
+2. Explain what we are about to do in simple language.
+3. Explain why it is necessary.
+4. Identify potential failure points.
+5. Give me the smallest safe next step.
+6. Wait for my approval/result before moving forward.
+
+Do not perform multiple phases at once.
+
+If a test fails:
+
+Do not immediately make random changes.
+
+First determine:
+- what failed
+- why it failed
+- whether it is configuration, permission, code, networking, or environment related
+- the smallest appropriate fix
+
+Then explain the fix to me before implementing it.
+
+I am new to AWS, so explain AWS concepts in simple language.
+
+I want senior-engineer-level technical judgment, but I do NOT want unnecessary complexity.
+
+The priority order is:
+
+1. Existing functionality
+2. Reliability
+3. Security
+4. Simplicity
+5. Cost efficiency
+6. Automation
+
+Do not optimize prematurely.
+
+==================================================
+YOUR FIRST RESPONSE
+==================================================
+
+Do NOT change anything.
+
+Do NOT create files.
+
+Do NOT install anything.
+
+Do NOT run destructive commands.
+
+First inspect the repository and compare the actual current state against everything described above.
+
+Then tell me only:
+
+1. What you verified
+2. What is already complete
+3. What is still incomplete
+4. Whether anything in this migration plan is technically incorrect or risky
+5. The single next action you recommend for PHASE 1
+
+Then STOP and wait for my instruction.

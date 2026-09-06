@@ -18,7 +18,6 @@ def _is_authorized(req) -> bool:
     provided = req.headers.get("X-Executor-Secret", "")
     return provided == shared_secret
 
-
 @app.before_request
 def authorize():
     if request.path == "/health":
