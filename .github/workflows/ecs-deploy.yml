@@ -1,0 +1,162 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      service_to_deploy:
+        description: 'Which service to deploy?'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - main
+          - executor
+          - both
+
+concurrency:
+  group: production-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  INFRASTRUCTURE_ROLE: arn:aws:iam::998631801915:role/service-role/ecsInfrastructureRoleForExpressServices
+  EXECUTION_ROLE: arn:aws:iam::998631801915:role/service-role/ecsTaskExecutionRole
+  OIDC_ROLE: arn:aws:iam::998631801915:role/GitHubActionsSkillUpRole
+
+jobs:
+  change-detection:
+    runs-on: ubuntu-latest
+    outputs:
+      main: ${{ steps.detect.outputs.main }}
+      executor: ${{ steps.detect.outputs.executor }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect Changes
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SERVICE="${{ inputs.service_to_deploy }}"
+            if [ "$SERVICE" == "both" ]; then
+              echo "main=true" >> "$GITHUB_OUTPUT"
+              echo "executor=true" >> "$GITHUB_OUTPUT"
+            elif [ "$SERVICE" == "main" ]; then
+              echo "main=true" >> "$GITHUB_OUTPUT"
+              echo "executor=false" >> "$GITHUB_OUTPUT"
+            elif [ "$SERVICE" == "executor" ]; then
+              echo "main=false" >> "$GITHUB_OUTPUT"
+              echo "executor=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Invalid service_to_deploy input: $SERVICE"
+              exit 1
+            fi
+          else
+            BEFORE="${{ github.event.before }}"
+            SHA="${{ github.sha }}"
+            
+            if [ "$BEFORE" == "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE" ]; then
+              echo "Initial push or invalid before-sha. Defaulting to full deployment detection."
+              changed_files=$(git ls-tree -r HEAD --name-only)
+            else
+              changed_files=$(git diff --name-only $BEFORE $SHA)
+            fi
+
+            main_changed=false
+            executor_changed=false
+
+            while IFS= read -r file; do
+              [ -z "$file" ] && continue
+              if [[ "$file" == executor_service/* ]]; then
+                executor_changed=true
+              elif [[ "$file" =~ ^(a2a|agents|api|config|database|scripts|static|templates|tools|utils)/ ]] || \
+                   [[ "$file" == "requirements.txt" ]] || \
+                   [[ "$file" == "Dockerfile" ]]; then
+                main_changed=true
+              fi
+            done <<< "$changed_files"
+
+            echo "main=$main_changed" >> "$GITHUB_OUTPUT"
+            echo "executor=$executor_changed" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy-main:
+    needs: change-detection
+    if: needs.change-detection.outputs.main == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5579c002bb4778aa43395ef1df492868a9a1c83f # v4.0.2
+        with:
+          role-to-assume: ${{ env.OIDC_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@4625ce35226a7557230889aae2f52eb50ec3dcda # v2.0.1
+
+      - name: Build and Push Main Image
+        env:
+          ECR_REGISTRY: 998631801915.dkr.ecr.ap-south-1.amazonaws.com
+          ECR_REPOSITORY: skillup-agent
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to ECS Express Mode (Main)
+        uses: aws-actions/amazon-ecs-deploy-express-service@7c48a2de16441d528a3c89829831968dc1455010 # v1.2.2
+        with:
+          service-name: skillup-main
+          infrastructure-role-arn: ${{ env.INFRASTRUCTURE_ROLE }}
+          execution-role-arn: ${{ env.EXECUTION_ROLE }}
+          image: 998631801915.dkr.ecr.ap-south-1.amazonaws.com/skillup-agent:${{ github.sha }}
+
+  deploy-executor:
+    needs: change-detection
+    if: needs.change-detection.outputs.executor == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5579c002bb4778aa43395ef1df492868a9a1c83f # v4.0.2
+        with:
+          role-to-assume: ${{ env.OIDC_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@4625ce35226a7557230889aae2f52eb50ec3dcda # v2.0.1
+
+      - name: Build and Push Executor Image
+        env:
+          ECR_REGISTRY: 998631801915.dkr.ecr.ap-south-1.amazonaws.com
+          ECR_REPOSITORY: skillup-executor
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./executor_service
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to ECS Express Mode (Executor)
+        uses: aws-actions/amazon-ecs-deploy-express-service@7c48a2de16441d528a3c89829831968dc1455010 # v1.2.2
+        with:
+          service-name: skillup-executor
+          infrastructure-role-arn: ${{ env.INFRASTRUCTURE_ROLE }}
+          execution-role-arn: ${{ env.EXECUTION_ROLE }}
+          image: 998631801915.dkr.ecr.ap-south-1.amazonaws.com/skillup-executor:${{ github.sha }}
