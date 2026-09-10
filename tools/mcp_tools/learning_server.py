@@ -65,8 +65,13 @@ async def list_tools():
                 "type": "object",
                 "properties": {
                     "code": {"type": "string", "description": "Source code to execute"},
-                    "language": {"type": "string", "enum": ["python", "javascript", "typescript", "java", "cpp", "c"], "description": "Programming language"},
-                    "stdin": {"type": "string", "description": "Standard input for the code"}
+                    "language": {"type": "string", "description": "Programming language (e.g., python, javascript, ruby)"},
+                    "stdin": {"type": "string", "description": "Standard input for the code"},
+                    "context": {
+                        "type": "object",
+                        "description": "Learning context (skill, topic, level, task)",
+                        "additionalProperties": True
+                    }
                 },
                 "required": ["code", "language"]
             }
@@ -244,7 +249,8 @@ async def call_tool(name: str, arguments: dict):
             result = code_executor.execute_code(
                 code=arguments.get("code", ""),
                 language=arguments.get("language", "python"),
-                stdin=arguments.get("stdin", "")
+                stdin=arguments.get("stdin", ""),
+                context=arguments.get("context", {})
             )
         elif name == "validate_code":
             from tools.mcp_tools import code_executor

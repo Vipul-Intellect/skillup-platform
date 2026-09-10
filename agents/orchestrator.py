@@ -88,7 +88,6 @@ over unsupported free-form responses.""",
                 generate_content_config=types.GenerateContentConfig(
                     temperature=0.1,
                     top_p=0.9,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             self.adk_runner = InMemoryRunner(
@@ -193,13 +192,13 @@ over unsupported free-form responses.""",
         try:
             resolved_session_id = session_id or "orchestrator-default"
             session_service = self.adk_runner.session_service
-            existing_session = session_service.get_session(
+            existing_session = await session_service.get_session(
                 app_name=self.adk_app_name,
                 user_id=resolved_session_id,
                 session_id=resolved_session_id,
             )
             if existing_session is None:
-                session_service.create_session(
+                await session_service.create_session(
                     app_name=self.adk_app_name,
                     user_id=resolved_session_id,
                     session_id=resolved_session_id,

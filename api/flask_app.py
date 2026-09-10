@@ -322,8 +322,9 @@ def execute_code():
         code = data.get('code', '')
         language = data.get('language', 'python')
         stdin = data.get('stdin', '')
+        context = data.get('context', {})
         
-        result = get_learning_agent().execute_code(code, language, stdin)
+        result = get_learning_agent().execute_code(code, language, stdin, context)
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Code execution error: {e}")

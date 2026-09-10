@@ -80,7 +80,6 @@ and manage schedules. Prefer tool-grounded responses and keep outputs structured
                 generate_content_config=types.GenerateContentConfig(
                     temperature=0.2,
                     top_p=0.9,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             self.adk_runner = InMemoryRunner(
@@ -173,13 +172,13 @@ and manage schedules. Prefer tool-grounded responses and keep outputs structured
         try:
             resolved_session_id = session_id or "learning-default"
             session_service = self.adk_runner.session_service
-            existing_session = session_service.get_session(
+            existing_session = await session_service.get_session(
                 app_name=self.adk_app_name,
                 user_id=resolved_session_id,
                 session_id=resolved_session_id,
             )
             if existing_session is None:
-                session_service.create_session(
+                await session_service.create_session(
                     app_name=self.adk_app_name,
                     user_id=resolved_session_id,
                     session_id=resolved_session_id,
@@ -266,7 +265,7 @@ and manage schedules. Prefer tool-grounded responses and keep outputs structured
 
     # ================== CODE EXECUTION METHODS ==================
 
-    def execute_code(self, code: str, language: str, stdin: str = "") -> dict:
+    def execute_code(self, code: str, language: str, stdin: str = "", context: dict = None) -> dict:
         """Execute user code."""
         return self._run_on_loop(
             self._call_mcp_tool(
@@ -275,6 +274,7 @@ and manage schedules. Prefer tool-grounded responses and keep outputs structured
                     "code": code,
                     "language": language,
                     "stdin": stdin,
+                    "context": context or {},
                 },
             )
         )

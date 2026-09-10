@@ -713,8 +713,13 @@ def fetch_jobs(
             )
         return cached
 
+    role = "developer"
+    if session_id:
+        session_data = get_session(session_id) or {}
+        role = session_data.get("target_role") or session_data.get("domain") or "developer"
+
     try:
-        query_parts = [skill.strip(), "developer"]
+        query_parts = [skill.strip(), role.strip()]
         if resolved_level:
             level_key = resolved_level.strip().lower()
             if level_key == "beginner":
@@ -723,25 +728,31 @@ def fetch_jobs(
                 query_parts.insert(0, "mid level")
             elif level_key == "advanced":
                 query_parts.insert(0, "senior")
-
-        response = requests.get(
-            "https://jsearch.p.rapidapi.com/search",
-            headers={
-                "X-RapidAPI-Key": settings.RAPIDAPI_KEY,
-                "X-RapidAPI-Host": settings.RAPIDAPI_JSEARCH_HOST,
-            },
-            params={
-                "query": " ".join([part for part in query_parts if part]),
-                "num_pages": "1",
-                "date_posted": "month",
-            },
-            timeout=settings.API_TIMEOUT,
-        )
-        response.raise_for_status()
-        data = response.json()
+                
+        job_data = []
+        for time_filter in ["week", "month"]:
+            response = requests.get(
+                "https://jsearch.p.rapidapi.com/search",
+                headers={
+                    "X-RapidAPI-Key": settings.RAPIDAPI_KEY,
+                    "X-RapidAPI-Host": settings.RAPIDAPI_JSEARCH_HOST,
+                },
+                params={
+                    "query": " ".join([part for part in query_parts if part]),
+                    "country": "in",
+                    "num_pages": "1",
+                    "date_posted": time_filter,
+                },
+                timeout=settings.API_TIMEOUT,
+            )
+            response.raise_for_status()
+            data = response.json()
+            job_data = data.get("data") or []
+            if job_data:
+                break
 
         jobs = []
-        for job in (data.get("data") or [])[:limit]:
+        for job in job_data[:limit]:
             jobs.append(
                 {
                     "title": job.get("job_title"),

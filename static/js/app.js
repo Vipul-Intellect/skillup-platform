@@ -119,7 +119,7 @@ function load() {
     if (!raw) return;
     try {
         Object.assign(state, defaults, JSON.parse(raw));
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function toast(title, message, tone = "default") {
@@ -398,7 +398,74 @@ function renderVideos() {
     const curated = state.videos.filter(video => video.source === "curated").length;
     const live = state.videos.filter(video => video.source === "live").length;
     const fallback = state.videos.filter(video => video.source === "fallback").length;
-    els.videosList.innerHTML = state.videos.map((video, index) => `<article class="video-card ${state.selectedVideo?.url === video.url ? "selected-skill-card" : ""}"><div class="video-thumb">${video.thumbnail ? `<img src="${esc(video.thumbnail)}" alt="${esc(video.title || "Video thumbnail")}">` : `<div class="video-thumb-placeholder"><span class="material-symbols-outlined">smart_display</span><strong>${esc(video.duration || "YouTube")}</strong></div>`}<span class="source-badge ${video.source === "curated" ? "source-curated" : "source-live"}">${esc(fmt(video.source || "live"))}</span><span class="duration-badge">${esc(video.duration || "Unknown")}</span></div><div class="video-content"><p class="video-title">${esc(video.title || "Video")}</p><p class="card-meta">${esc(video.channel || "Unknown channel")}</p><p class="card-body">Use the YouTube link externally, then bring that context back into practice generation.</p><div class="video-actions"><button class="button button-secondary button-small" data-video-select="${index}">${state.selectedVideo?.url === video.url ? "Selected for Practice" : "Use for Practice"}</button><a class="button button-primary button-small" href="${esc(video.url || "#")}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a></div></div></article>`).join("");
+    
+    const safeUrl = (urlStr) => {
+        if (!urlStr) return "#";
+        try {
+            const u = new URL(urlStr);
+            if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+        } catch { /* Ignored */ }
+        return "#";
+    };
+
+    els.videosList.innerHTML = state.videos.map((video, index) => {
+        const title = esc(video.title || "Video");
+        const channel = esc(video.channel || "Unknown channel");
+        const duration = esc(video.duration || "Unknown");
+        const thumbAlt = esc(video.title || "Video thumbnail");
+        const url = esc(safeUrl(video.url));
+        const thumbUrl = video.thumbnail ? esc(safeUrl(video.thumbnail)) : null;
+        const sourceLabel = esc(fmt(video.source || "live"));
+        const isSelected = state.selectedVideo?.url === video.url;
+        
+        const scoreText = (video.learning_fit_score !== undefined && video.learning_fit_score !== null)
+            ? `<span class="tag tag-primary">Learning Fit Score: ${esc(String(video.learning_fit_score))}</span>` 
+            : "";
+            
+        const fallbackText = video.is_semantic_fallback 
+            ? `<span class="tag tag-secondary">Semantic evaluation unavailable</span>` 
+            : "";
+
+        const showSemanticFields = !video.is_semantic_fallback;
+
+        const shortDescHtml = video.short_description
+            ? `<p class="card-meta">${esc(video.short_description)}</p>`
+            : "";
+
+        const descHtml = video.description 
+            ? `<p class="card-body">${esc(video.description)}</p>` 
+            : "";
+
+        const conceptsHtml = (showSemanticFields && Array.isArray(video.concepts_covered) && video.concepts_covered.length > 0)
+            ? `<div class="tag-row">${tagList(video.concepts_covered)}</div>`
+            : "";
+
+        const whyHtml = (showSemanticFields && Array.isArray(video.why_recommended) && video.why_recommended.length > 0)
+            ? `<ul class="job-description">${video.why_recommended.map(reason => `<li>${esc(reason)}</li>`).join("")}</ul>`
+            : "";
+
+        return `<article class="video-card ${isSelected ? "selected-skill-card" : ""}">
+            <div class="video-thumb">
+                ${thumbUrl !== null && thumbUrl !== "#" ? `<img src="${thumbUrl}" alt="${thumbAlt}">` : `<div class="video-thumb-placeholder"><span class="material-symbols-outlined">smart_display</span><strong>${duration}</strong></div>`}
+                <span class="source-badge ${video.source === "curated" ? "source-curated" : "source-live"}">${sourceLabel}</span>
+                <span class="duration-badge">${duration}</span>
+            </div>
+            <div class="video-content">
+                <p class="video-title">${title}</p>
+                <p class="card-meta">${channel}</p>
+                ${(scoreText || fallbackText) ? `<div class="tag-row">${scoreText}${fallbackText}</div>` : ""}
+                ${shortDescHtml}
+                ${conceptsHtml}
+                ${whyHtml}
+                ${descHtml}
+                <div class="video-actions">
+                    <button class="button button-secondary button-small" data-video-select="${index}">${isSelected ? "Selected for Practice" : "Use for Practice"}</button>
+                    <a class="button button-primary button-small" href="${url}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>
+                </div>
+            </div>
+        </article>`;
+    }).join("");
+    
     if (fallback) {
         setStatus(els.videosMeta, `Direct YouTube results were unavailable. Showing ${fallback} backup YouTube searches for this topic.`, "warning");
     } else {
@@ -491,7 +558,60 @@ function renderEvaluation() {
     }
     toggleEmpty(els.evaluationResult, false);
     const result = state.evaluationResult;
-    els.evaluationResult.innerHTML = `<div class="results-stack"><div class="mini-kv"><div class="mini-kv-item"><span class="summary-label">Score</span><strong>${esc(String(result.total_score ?? "N/A"))}</strong></div><div class="mini-kv-item"><span class="summary-label">Badge</span><strong>${esc(result.badge || "Pending")}</strong></div><div class="mini-kv-item"><span class="summary-label">Readiness</span><strong>${esc(result.readiness || "Pending")}</strong></div><div class="mini-kv-item"><span class="summary-label">Confidence</span><strong>${esc(String(result.confidence ?? "N/A"))}</strong></div></div><div class="result-card"><p class="result-meta">Mastery Summary</p><h4 class="result-title">${esc(result.mastery_summary || "Evaluation complete")}</h4><p class="result-body">${esc(result.feedback || "Detailed evaluation feedback will appear here.")}</p></div><div class="result-grid"><div class="result-card"><p class="result-meta">Strengths</p><div class="tag-row">${tagList(result.strengths, "tag-primary")}</div></div><div class="result-card"><p class="result-meta">Weak Topics</p><div class="tag-row">${tagList(result.weak_topics, "tag-secondary")}</div></div></div><div class="result-grid"><div class="result-card"><p class="result-meta">Independence Signal</p><p class="result-body">${esc(result.independence_signal || "No independence signal returned.")}</p></div><div class="result-card"><p class="result-meta">Job Fit</p><p class="result-body">${esc(result.job_fit?.summary || result.final_report || "Job-fit guidance will appear here.")}</p></div></div><div class="result-card"><p class="result-meta">Next Steps</p><div class="tag-row">${tagList(result.next_steps)}</div></div><div class="result-card"><p class="result-meta">Achievements</p><div class="tag-row">${tagList(result.achievements, "tag-primary")}</div></div></div>`;
+    
+    const roleHtml = state.targetRole ? `<div class="mini-kv-item"><span class="summary-label">Target Role</span><strong>${esc(state.targetRole)}</strong></div>` : "";
+    const summaryHtml = `<div class="mini-kv"><div class="mini-kv-item"><span class="summary-label">Skill</span><strong>${esc(state.selectedSkill || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Topic</span><strong>${esc(state.selectedTopic || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Level</span><strong>${esc(state.validatedLevel || state.declaredLevel || "N/A")}</strong></div>${roleHtml}</div>`;
+
+    const hasProgress = state.scheduleChoice === "create" && state.schedule && typeof state.schedule.progress_percentage !== 'undefined';
+    const progressVal = hasProgress ? Math.min(100, Math.max(0, parseInt(state.schedule.progress_percentage))) : 0;
+    const progressText = hasProgress ? `${progressVal}%` : "No plan";
+    const progressStroke = hasProgress ? "var(--primary)" : "var(--border)";
+    const circumference = 2 * Math.PI * 36; 
+    const strokeDashoffset = circumference - (progressVal / 100) * circumference;
+    
+    const ringHtml = `
+    <div class="progress-ring-container" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+        <svg width="100" height="100" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--bg-panel)" stroke-width="6"/>
+            <circle cx="40" cy="40" r="36" fill="none" stroke="${progressStroke}" stroke-width="6" stroke-dasharray="${circumference}" stroke-dashoffset="${hasProgress ? strokeDashoffset : 0}" style="transform: rotate(-90deg); transform-origin: 50% 50%;"/>
+        </svg>
+        <div style="margin-top:-60px; margin-bottom: 30px; font-weight:bold; font-size: 1.1rem; color: var(--text-primary);">${esc(progressText)}</div>
+        <p class="summary-label" style="margin-top:10px;">${hasProgress ? `Day ${esc(state.schedule.current_day || 0)} of ${esc(state.schedule.total_days || 0)}` : "No learning plan yet"}</p>
+    </div>`;
+
+    let planHtml = "";
+    if (state.scheduleChoice === "create" && state.schedule && state.schedule.daily_plan) {
+        const tasks = Array.isArray(state.schedule.daily_plan) ? state.schedule.daily_plan : [];
+        planHtml = `<div class="result-card" style="grid-column: 1 / -1;"><p class="result-meta">Learning Plan</p><ul class="job-description">${tasks.map(t => `<li>${esc(t.task || t.description || t)}</li>`).join("")}</ul></div>`;
+    }
+
+    els.evaluationResult.innerHTML = `
+        <div class="results-stack">
+            ${summaryHtml}
+            <div class="dashboard-metrics-grid" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:stretch; margin-top:1rem; margin-bottom:1rem;">
+                <div class="result-card" style="flex:1; min-width:200px;">
+                    <p class="result-meta">Learning Progress</p>
+                    ${ringHtml}
+                </div>
+                <div class="result-card" style="flex:2; min-width:250px; display:flex; flex-direction:column; justify-content:center;">
+                    <p class="result-meta" style="margin-bottom:1rem;">Assessment Metrics</p>
+                    <div class="mini-kv">
+                        <div class="mini-kv-item"><span class="summary-label">Score</span><strong>${esc(String(result.total_score ?? "N/A"))}</strong></div>
+                        <div class="mini-kv-item"><span class="summary-label">Mastery</span><strong>${esc(result.badge || "Pending")}</strong></div>
+                        <div class="mini-kv-item"><span class="summary-label">Readiness</span><strong>${esc(result.readiness || "Pending")}</strong></div>
+                        ${result.confidence ? `<div class="mini-kv-item"><span class="summary-label">Confidence</span><strong>${esc(String(result.confidence))}</strong></div>` : ""}
+                    </div>
+                </div>
+            </div>
+            <div class="result-grid">
+                <div class="result-card"><p class="result-meta">Strengths</p><div class="tag-row">${tagList(result.strengths, "tag-primary")}</div></div>
+                <div class="result-card"><p class="result-meta">Weak Topics</p><div class="tag-row">${tagList(result.weak_topics, "tag-secondary")}</div></div>
+                <div class="result-card" style="grid-column: 1 / -1;"><p class="result-meta">Next Steps</p><div class="tag-row">${tagList(result.next_steps)}</div></div>
+                ${result.feedback ? `<div class="result-card" style="grid-column: 1 / -1;"><p class="result-meta">Feedback</p><p class="result-body">${esc(result.feedback)}</p></div>` : ""}
+                ${planHtml}
+            </div>
+        </div>
+    `;
 }
 
 function renderJobs() {
@@ -908,12 +1028,42 @@ async function handleRunCode() {
         try {
             state.executionOutput = "Running code...";
             renderCode();
-            const data = await api("/api/execute-code", { method: "POST", body: { code: state.code, language: state.currentLanguage, stdin: els.stdinInput.value || "" } });
-            const lines = [`Success: ${data.success}`, `Exit code: ${data.exit_code ?? "N/A"}`];
-            if (data.stdout) lines.push("", "STDOUT:", data.stdout);
-            if (data.stderr) lines.push("", "STDERR:", data.stderr);
-            if (data.error) lines.push("", "ERROR:", data.error);
-            state.executionOutput = lines.join("\n");
+            
+            const taskContext = {
+                skill: state.selectedSkill,
+                topic: state.selectedTopic,
+                level: learnLevel(),
+                practice_task: state.practicePack?.mini_lab?.task || "No specific task assigned"
+            };
+            
+            const payload = { 
+                code: state.code, 
+                language: state.currentLanguage, 
+                stdin: els.stdinInput.value || "",
+                context: taskContext
+            };
+            
+            const data = await api("/api/execute-code", { method: "POST", body: payload });
+            
+            if (data.fallback && data.validation) {
+                const val = data.validation;
+                const lines = [`AI Code Validation: ${val.status}`];
+                if (val.status === "INVALID" && val.errors?.length) {
+                    val.errors.forEach(err => {
+                        const lineStr = err.line ? ` (Line ${err.line})` : "";
+                        lines.push(`- Error${lineStr}: ${err.message}`);
+                    });
+                }
+                if (val.explanation) lines.push("", `Explanation:\n${val.explanation}`);
+                if (val.suggestion) lines.push("", `Suggestion:\n${val.suggestion}`);
+                state.executionOutput = lines.join("\n");
+            } else {
+                const lines = [`Success: ${data.success}`, `Exit code: ${data.exit_code ?? "N/A"}`];
+                if (data.stdout) lines.push("", "STDOUT:", data.stdout);
+                if (data.stderr) lines.push("", "STDERR:", data.stderr);
+                if (data.error) lines.push("", "ERROR:", data.error);
+                state.executionOutput = lines.join("\n");
+            }
             renderCode();
         } catch (error) {
             state.executionOutput = `Execution failed.\n${error.message}`;

@@ -196,18 +196,15 @@ def search_videos(
         curated_videos = _hydrate_video_records(curated_raw, source="curated", preferred_duration=preferred_duration)
         live_videos = _hydrate_video_records(live_raw, source="live", preferred_duration=preferred_duration)
 
-        curated_selected = curated_videos[:CURATED_TARGET]
-        live_selected = live_videos[:LIVE_TARGET]
+        all_candidates = []
+        seen_vids = set()
+        for v in curated_videos + live_videos:
+            if v["video_id"] not in seen_vids:
+                seen_vids.add(v["video_id"])
+                all_candidates.append(v)
 
-        final_videos = curated_selected + live_selected
-        if len(final_videos) < desired_total:
-            shortage = desired_total - len(final_videos)
-            spillover = curated_videos[CURATED_TARGET:] + live_videos[LIVE_TARGET:]
-            final_videos.extend(spillover[:shortage])
-
-        final_videos = final_videos[:desired_total]
         fallback_used = False
-        if not final_videos:
+        if not all_candidates:
             final_videos = _build_fallback_videos(
                 skill=skill,
                 level=level,
@@ -216,6 +213,14 @@ def search_videos(
                 max_results=desired_total,
             )
             fallback_used = True
+        else:
+            evaluated_candidates = _evaluate_and_rank_videos(
+                candidates=all_candidates,
+                skill=skill,
+                level=level,
+                topic=target_topic,
+            )
+            final_videos = evaluated_candidates[:desired_total]
 
         result = {
             "skill": skill,
@@ -294,6 +299,140 @@ def _build_fallback_videos(
             }
         )
     return fallback
+
+
+def _safe_score(val) -> int:
+    try:
+        if val is None:
+            return 0
+        v = int(float(val))
+        return max(0, min(10, v))
+    except (ValueError, TypeError):
+        return 0
+
+def _evaluate_and_rank_videos(
+    candidates: list[dict], skill: str, level: str, topic: str
+) -> list[dict]:
+    if not candidates:
+        return []
+
+    is_semantic_fallback = False
+    
+    payload = []
+    for c in candidates:
+        payload.append({
+            "video_id": c["video_id"],
+            "title": c["title"],
+            "channel": c["channel"],
+            "duration": c["duration"],
+            "published_at": c.get("published_at"),
+            "description": c.get("description", "")[:2000]
+        })
+        
+    schema = {
+        "type": "OBJECT",
+        "properties": {
+            "evaluations": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "video_id": {"type": "STRING"},
+                        "topic_match_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "concept_coverage_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "learner_level_fit_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "content_focus_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "source_quality_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "technical_freshness_score": {"type": "INTEGER", "minimum": 0, "maximum": 10},
+                        "concepts_covered": {"type": "ARRAY", "items": {"type": "STRING"}, "maxItems": 5},
+                        "why_recommended": {"type": "ARRAY", "items": {"type": "STRING"}, "maxItems": 3},
+                        "short_description": {"type": "STRING", "description": "1-2 lines"}
+                    },
+                    "required": [
+                        "video_id", "topic_match_score", "concept_coverage_score", 
+                        "learner_level_fit_score", "content_focus_score", "source_quality_score",
+                        "technical_freshness_score", "concepts_covered", "why_recommended", "short_description"
+                    ]
+                }
+            }
+        },
+        "required": ["evaluations"]
+    }
+    
+    prompt = f"""Evaluate these YouTube video candidates for a learner based ONLY on the provided metadata.
+DO NOT invent information, concepts, technologies, or claims not present in the metadata.
+If the metadata does not provide enough evidence, be conservative.
+Assess technical freshness conservatively based on the title, description, and publication date; date alone does not prove accuracy.
+
+Skill: {skill}
+Topic: {topic or skill}
+Learner Level: {level}
+
+Candidates:
+{json.dumps(payload, indent=2)}
+
+Return structured evaluations scoring each out of 10."""
+
+    evals = {}
+    try:
+        client = _get_gemini_client()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=schema,
+                temperature=0.2,
+            ),
+        )
+        data = json.loads(response.text)
+        evals = {e["video_id"]: e for e in data.get("evaluations", [])}
+    except Exception as e:
+        logger.warning(f"Semantic evaluation failed, falling back to deterministic: {e}")
+        is_semantic_fallback = True
+
+    for c in candidates:
+        vid = c["video_id"]
+        ev = evals.get(vid)
+        
+        if ev and not is_semantic_fallback:
+            views = c.get("views", 0)
+            if views > 1000000:
+                eng_bonus = 4
+            elif views > 100000:
+                eng_bonus = 3
+            elif views > 10000:
+                eng_bonus = 2
+            elif views > 1000:
+                eng_bonus = 1
+            else:
+                eng_bonus = 0
+                
+            base_score = (
+                _safe_score(ev.get("topic_match_score")) * 2.4 +
+                _safe_score(ev.get("concept_coverage_score")) * 2.4 +
+                _safe_score(ev.get("learner_level_fit_score")) * 1.6 +
+                _safe_score(ev.get("content_focus_score")) * 1.4 +
+                _safe_score(ev.get("source_quality_score")) * 1.0 +
+                _safe_score(ev.get("technical_freshness_score")) * 0.8
+            )
+            c["learning_fit_score"] = int(min(100, base_score + eng_bonus))
+            c["concepts_covered"] = ev.get("concepts_covered", [])
+            c["why_recommended"] = ev.get("why_recommended", [])
+            c["short_description"] = ev.get("short_description", "")
+            c["is_semantic_fallback"] = False
+        else:
+            rel_score = c.get("relevance_score", 0)
+            dur_score = c.get("duration_match_score", 0)
+            raw_fallback = rel_score + dur_score
+            c["learning_fit_score"] = int(min(100, (raw_fallback / 10.0) * 100))
+            c["concepts_covered"] = []
+            c["why_recommended"] = []
+            c["short_description"] = ""
+            c["is_semantic_fallback"] = True
+
+    candidates.sort(key=lambda x: x["learning_fit_score"], reverse=True)
+    return candidates
 
 
 def _build_query(skill: str, level: str, topic: str) -> str:
@@ -431,6 +570,7 @@ def _search_api(
                 "search_query": query,
                 "published_at": snippet.get("publishedAt"),
                 "thumbnail": (snippet.get("thumbnails", {}).get("medium") or {}).get("url"),
+                "description": snippet.get("description", ""),
             }
         )
     return results
@@ -479,6 +619,7 @@ def _hydrate_video_records(search_results: list[dict], source: str, preferred_du
                 "duration": details.get("duration_text"),
                 "duration_seconds": duration_seconds,
                 "published_at": item.get("published_at"),
+                "description": item.get("description", ""),
                 "source": source,
                 "trusted_channel": source == "curated",
                 "relevance_score": relevance_score,

@@ -79,7 +79,6 @@ keep outputs structured and practical.""",
             generate_content_config=types.GenerateContentConfig(
                 temperature=0.2,
                 top_p=0.9,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         self.adk_runner = InMemoryRunner(agent=self.adk_agent, app_name=self.adk_app_name)

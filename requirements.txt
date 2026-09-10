@@ -1,32 +1,32 @@
 # Flask Web Framework
-Flask==3.0.0
-Flask-CORS==4.0.0
+Flask==3.1.3
+Flask-CORS==6.0.5
 
 # Google Cloud
-google-cloud-firestore
-google-api-python-client
-google-genai
-google-adk
-pydantic
+google-cloud-firestore==2.30.0
+google-api-python-client==2.200.0
+google-genai==2.22.0
+google-adk==2.8.0
+pydantic==2.13.5
 
 # MCP Protocol
-mcp
+mcp==1.30.0
 
 # HTTP Requests
-requests
+requests==2.34.2
 
 # PDF Processing
-PyPDF2
+PyPDF2==3.0.1
 
 # Web Scraping for resume links
-beautifulsoup4
-lxml
+beautifulsoup4==4.15.0
+lxml==6.1.3
 
 # Environment Variables
-python-dotenv
+python-dotenv==1.2.3
 
 # Production Server
-gunicorn
+gunicorn==26.2.0
 
 # Utilities
-python-dateutil
+python-dateutil==2.9.0.post0
