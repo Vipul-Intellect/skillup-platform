@@ -5,8 +5,8 @@ Flask-CORS==6.0.5
 # Google Cloud
 google-cloud-firestore==2.30.0
 google-api-python-client==2.200.0
-google-genai==2.22.0
-google-adk==2.8.0
+google-genai==2.23.0
+google-adk==2.9.0
 pydantic==2.13.5
 
 # MCP Protocol
