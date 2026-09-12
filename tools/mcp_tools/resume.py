@@ -611,7 +611,7 @@ Jobs:
 Return ONLY a JSON array of skill names (no markdown, no code blocks):
 ["Python", "Docker", "Kubernetes", ...]"""
 
-        skills = _generate_json(prompt, JOB_SKILLS_SCHEMA, max_output_tokens=192)
+        skills = _generate_json(prompt, JOB_SKILLS_SCHEMA, max_output_tokens=2048)
         logger.info(f"Extracted {len(skills)} skills from job-market snippets")
         return skills
         
@@ -675,7 +675,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "domain": "Backend/Frontend/DevOps/ML/etc"
 }}"""
 
-    return _generate_json(prompt, RESUME_RESPONSE_SCHEMA, max_output_tokens=512)
+    return _generate_json(prompt, RESUME_RESPONSE_SCHEMA, max_output_tokens=2048)
 
 
 def _extract_resume_profile(resume_text: str):
@@ -867,7 +867,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
             prompt,
         ],
         config=types.GenerateContentConfig(
-            max_output_tokens=512,
+            max_output_tokens=2048,
             response_mime_type="application/json",
             response_json_schema=RESUME_RESPONSE_SCHEMA,
         ),
@@ -896,6 +896,10 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 def _parse_json_response(text: str):
     cleaned = (text or "").strip()
     cleaned = cleaned.replace("```json", "").replace("```", "").strip()
+    if not cleaned:
+        raise ValueError("Model returned empty response after cleaning.")
+    if not cleaned:
+        raise ValueError("Model returned empty response after cleaning.")
     return json.loads(cleaned)
 
 

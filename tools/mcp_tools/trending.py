@@ -173,7 +173,7 @@ Return ONLY a JSON array of skill names (no markdown, no code blocks):
         model=MODEL_ID,
         contents=prompt,
         config=types.GenerateContentConfig(
-            max_output_tokens=96,
+            max_output_tokens=2048,
             response_mime_type="application/json",
             response_json_schema={
                 "type": "array",
@@ -188,6 +188,18 @@ Return ONLY a JSON array of skill names (no markdown, no code blocks):
     if parsed is None:
         text = (getattr(response, "text", "") or "").strip()
         text = text.replace("```json", "").replace("```", "").strip()
+        if not text:
+            try:
+                finish_reason = response.candidates[0].finish_reason
+            except (IndexError, AttributeError):
+                finish_reason = "UNKNOWN"
+            raise ValueError(f"Model returned empty response. Finish reason: {finish_reason}")
+        if not text:
+            try:
+                finish_reason = response.candidates[0].finish_reason
+            except (IndexError, AttributeError):
+                finish_reason = "UNKNOWN"
+            raise ValueError(f"Model returned empty response. Finish reason: {finish_reason}")
         parsed = json.loads(text)
 
     normalized = []

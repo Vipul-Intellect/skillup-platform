@@ -382,7 +382,14 @@ Return structured evaluations scoring each out of 10."""
                 response_json_schema=schema,
             ),
         )
-        data = json.loads(response.text)
+        text = response.text
+        if not text:
+            try:
+                finish_reason = response.candidates[0].finish_reason
+            except (IndexError, AttributeError):
+                finish_reason = "UNKNOWN"
+            raise ValueError(f"Model returned empty response. Finish reason: {finish_reason}")
+        data = json.loads(text)
         evals = {e["video_id"]: e for e in data.get("evaluations", [])}
     except Exception as e:
         logger.warning(f"Semantic evaluation failed, falling back to deterministic: {e}")

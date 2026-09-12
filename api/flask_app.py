@@ -127,6 +127,10 @@ def get_trending_skills():
             target_role = request.json.get('target_role')
         
         result = get_orchestrator().fetch_trending_skills(target_role)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Trending skills error: {e}")
@@ -181,6 +185,10 @@ def analyze_resume():
             
             result = get_orchestrator().analyze_resume(resume_text, session_id)
 
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Resume analysis error: {e}")
@@ -196,6 +204,10 @@ def get_skill_gaps():
         user_skills = data.get('user_skills')
 
         result = get_orchestrator().compute_skill_gaps(session_id, target_role, user_skills=user_skills)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Skill gaps error: {e}")
@@ -211,6 +223,10 @@ def assess_level():
         session_id = data.get('session_id') or session.get('session_id')
         
         result = get_orchestrator().assess_user_level(session_id, skill, declared_level)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Assessment error: {e}")
@@ -232,6 +248,10 @@ def validate_level():
             questions=questions,
             declared_level=declared_level,
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Validation error: {e}")
@@ -259,6 +279,10 @@ def get_videos():
             topic,
             preferred_duration,
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Video search error: {e}")
@@ -276,6 +300,10 @@ def get_topics():
         exclude_topics = data.get('exclude_topics', [])
 
         result = get_learning_agent().recommend_topics(skill, level, count, exclude_topics)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Topic recommendation error: {e}")
@@ -296,6 +324,10 @@ def start_skill_gap_job():
             target_role=target_role,
             user_skills=user_skills,
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result}), 202
     except Exception as e:
         logger.error(f"Skill-gap job start error: {e}")
@@ -309,6 +341,10 @@ def get_skill_gap_job(job_id):
         result = get_orchestrator().get_skill_gap_job_status(job_id)
         if result.get("error") == "Job not found":
             return jsonify({"success": False, "error": "Job not found"}), 404
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Skill-gap job status error: {e}")
@@ -325,6 +361,10 @@ def execute_code():
         context = data.get('context', {})
         
         result = get_learning_agent().execute_code(code, language, stdin, context)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Code execution error: {e}")
@@ -340,6 +380,10 @@ def validate_code():
         language = data.get('language', 'python')
 
         result = get_learning_agent().validate_code(code, language)
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Code validation error: {e}")
@@ -351,6 +395,10 @@ def get_execution_config():
     """Return runtime/editor config for the future Monaco workspace."""
     try:
         result = get_learning_agent().get_execution_config()
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Execution config error: {e}")
@@ -376,6 +424,10 @@ def generate_practice():
             language=language,
             video_context=video_context,
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Practice generation error: {e}")
@@ -398,6 +450,10 @@ def evaluate_practice():
             topic=topic,
             answers=answers,
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Practice evaluation error: {e}")
@@ -419,6 +475,10 @@ def get_hint():
         result = get_learning_agent().get_hint(
             session_id, skill, topic, level, code, error, hint_level
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Hint error: {e}")
@@ -438,6 +498,10 @@ def generate_schedule():
         result = get_learning_agent().generate_schedule(
             session_id, skill, level, mode, daily_time
         )
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Schedule error: {e}")
@@ -454,6 +518,10 @@ def get_schedule(session_id):
         result = get_learning_agent().get_schedule(session_id)
         if result.get("error") == "Session not found":
             return jsonify({"success": False, "error": "Session not found"}), 404
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Get schedule error: {e}")
@@ -475,6 +543,10 @@ def update_schedule_progress():
         )
         if result.get("error") == "Session not found":
             return jsonify({"success": False, "error": "Session not found"}), 404
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Update schedule progress error: {e}")
@@ -509,6 +581,10 @@ def evaluate():
 
         if result.get("error"):
             return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Evaluation error: {e}")
@@ -527,6 +603,10 @@ def get_jobs():
         result = get_evaluator_agent().fetch_jobs(skill, level, limit, session_id=session_id or "")
         if result.get("error"):
             return jsonify({"success": False, "error": result["error"], "data": result}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
+        if isinstance(result, dict) and result.get("error"):
+            return jsonify({"success": False, "error": result["error"]}), 400
         return jsonify({"success": True, "data": result})
     except Exception as e:
         logger.error(f"Jobs error: {e}")
@@ -538,6 +618,10 @@ def get_results(session_id):
     try:
         result = get_evaluator_agent().get_result(session_id)
         if result and not result.get("error"):
+            if isinstance(result, dict) and result.get("error"):
+                return jsonify({"success": False, "error": result["error"]}), 400
+            if isinstance(result, dict) and result.get("error"):
+                return jsonify({"success": False, "error": result["error"]}), 400
             return jsonify({"success": True, "data": result})
         return jsonify({"success": False, "error": "No results found"}), 404
     except Exception as e:

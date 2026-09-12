@@ -73,7 +73,14 @@ def _generate_json(prompt: str, schema: dict, *, max_output_tokens: int):
     )
     if getattr(response, "parsed", None) is not None:
         return response.parsed
-    return json.loads(response.text)
+    text = response.text
+    if not text:
+        try:
+            finish_reason = response.candidates[0].finish_reason
+        except (IndexError, AttributeError):
+            finish_reason = "UNKNOWN"
+        raise ValueError(f"Model returned empty response. Finish reason: {finish_reason}")
+    return json.loads(text)
 
 def generate_assessment_questions(skill, declared_level, session_id):
     try:
@@ -88,7 +95,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   ]
 }}"""
 
-        result = _generate_json(prompt, QUESTION_SCHEMA, max_output_tokens=192)
+        result = _generate_json(prompt, QUESTION_SCHEMA, max_output_tokens=2048)
         result["skill"] = skill
         result["declared_level"] = declared_level
         
@@ -126,7 +133,7 @@ Return ONLY valid JSON (no markdown):
   "reasoning": "brief explanation"
 }}"""
 
-        result = _generate_json(prompt, LEVEL_SCHEMA, max_output_tokens=128)
+        result = _generate_json(prompt, LEVEL_SCHEMA, max_output_tokens=2048)
         result["declared_level"] = resolved_level
         result["question_count"] = len(resolved_questions)
         

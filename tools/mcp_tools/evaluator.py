@@ -127,7 +127,14 @@ def _generate_json_now(prompt: str, schema: dict, *, max_output_tokens: int) -> 
     )
     if getattr(response, "parsed", None) is not None:
         return response.parsed
-    return json.loads(response.text)
+    text = response.text
+    if not text:
+        try:
+            finish_reason = response.candidates[0].finish_reason
+        except (IndexError, AttributeError):
+            finish_reason = "UNKNOWN"
+        raise ValueError(f"Model returned empty response. Finish reason: {finish_reason}")
+    return json.loads(text)
 
 
 def _generate_json(prompt: str, schema: dict, *, max_output_tokens: int) -> dict[str, Any]:
@@ -503,7 +510,7 @@ For short answers include 2-4 expected keywords.
 """
 
         try:
-            result = _generate_json(prompt, QUESTION_SCHEMA, max_output_tokens=1400)
+            result = _generate_json(prompt, QUESTION_SCHEMA, max_output_tokens=4096)
             instructions = result.get(
                 "instructions",
                 "Answer honestly. Short-answer responses can be brief but should be specific.",
@@ -609,7 +616,7 @@ Readiness guidance:
 """
 
         try:
-            result = _generate_json(prompt, CORE_EVALUATION_SCHEMA, max_output_tokens=1400)
+            result = _generate_json(prompt, CORE_EVALUATION_SCHEMA, max_output_tokens=4096)
         except TimeoutError:
             logger.warning(f"Gemini timed out evaluating answers for {session_id}; using deterministic scoring")
             result = _fallback_evaluation_result(
