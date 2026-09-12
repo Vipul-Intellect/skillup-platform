@@ -95,7 +95,7 @@ File: `agents/evaluator_agent.py`
 | Technology | Purpose |
 | --- | --- |
 | Google ADK | Agent runtime and orchestration |
-| Gemini 2.5 Flash | Reasoning, generation, scoring, and parsing |
+| Gemini 3.6 Flash | Reasoning, generation, scoring, and parsing |
 | MCP | Structured tool integration |
 | A2A protocol | Agent registration and message routing |
 | Flask | Main API and server-rendered web app |
