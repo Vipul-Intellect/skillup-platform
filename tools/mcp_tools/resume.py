@@ -25,7 +25,7 @@ import requests
 logger = get_logger(__name__)
 
 HTTP_OPTIONS = types.HttpOptions(timeout=settings.API_TIMEOUT * 1000)
-MODEL_ID = "gemini-2.5-flash"
+MODEL_ID = "gemini-3.6-flash"
 client = None
 _role_profile_lock_guard = threading.Lock()
 _role_profile_locks = {}

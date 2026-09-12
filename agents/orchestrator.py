@@ -37,7 +37,7 @@ class OrchestratorAgent:
         try:
             # Gemini SDK client used by the underlying ADK runtime and fallback flows.
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            self.model_id = "gemini-2.5-flash"
+            self.model_id = "gemini-3.6-flash"
             
             # MCP Server Parameters (stdio connection with absolute path)
             self.server_params = StdioServerParameters(

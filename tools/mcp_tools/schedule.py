@@ -38,7 +38,7 @@ def _generate_topics_now(skill: str, level: str, total_days: int):
     }
 
     response = _get_client().models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=f"""Generate a learning roadmap for {skill} for a {level} learner.
 
 Return exactly {total_days} topics in increasing order of difficulty.

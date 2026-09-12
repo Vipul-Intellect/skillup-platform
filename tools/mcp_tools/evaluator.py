@@ -17,7 +17,7 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-MODEL_ID = "gemini-2.5-flash"
+MODEL_ID = "gemini-3.6-flash"
 _client = None
 _genai_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="evaluator-genai")
 

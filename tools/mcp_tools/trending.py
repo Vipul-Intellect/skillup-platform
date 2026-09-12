@@ -12,7 +12,7 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-MODEL_ID = "gemini-2.5-flash"
+MODEL_ID = "gemini-3.6-flash"
 HTTP_OPTIONS = types.HttpOptions(timeout=settings.API_TIMEOUT * 1000)
 client = None
 _cache_lock = threading.Lock()

@@ -209,7 +209,7 @@ def generate_practice_set(
 
         try:
             response = _get_client().models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.6-flash",
                 contents=f"""Create a practice pack for a {level} learner.
 
 Skill: {skill}
@@ -547,7 +547,7 @@ def evaluate_practice_answers(
         }
 
         response = _get_client().models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=f"""Evaluate the learner's answers for a {skill} / {topic} practice pack.
 
 Use the evaluation guide for each item.
@@ -653,7 +653,7 @@ Rules:
             prompt += f"\nObserved error:\n{error}\n"
 
         response = _get_client().models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.2,
@@ -773,7 +773,7 @@ def explain_concept(skill: str, topic: str, level: str) -> dict:
         }
 
         response = _get_client().models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=f"""Explain the concept of "{topic}" in {skill} for a {level} learner.
 
 Rules:

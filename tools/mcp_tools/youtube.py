@@ -106,7 +106,7 @@ def recommend_topics(skill: str, level: str, count: int = 3, exclude_topics: lis
         }
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=f"""Suggest exactly {count} high-value learning topics for the skill "{skill}" for a {level} learner.
 
 Constraints:
@@ -377,7 +377,7 @@ Return structured evaluations scoring each out of 10."""
     try:
         client = _get_gemini_client()
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
