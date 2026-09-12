@@ -1,7 +1,5 @@
 # SkillUp Agent
 
-> Google GenAI APAC Academy Grand Hackathon | Track 2: Multi-Agent Systems
-
 SkillUp Agent is an AI-powered skill development platform that takes a learner from profile discovery to guided learning and final readiness evaluation. It is built around three coordinated Google ADK agents, MCP tool servers, Firestore-backed state, and a separate code execution service deployed on AWS ECS (Express Mode).
 
 ## Live demo
