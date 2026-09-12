@@ -2,11 +2,11 @@
 
 > Google GenAI APAC Academy Grand Hackathon | Track 2: Multi-Agent Systems
 
-SkillUp Agent is an AI-powered skill development platform that takes a learner from profile discovery to guided learning and final readiness evaluation. It is built around three coordinated Google ADK agents, MCP tool servers, Firestore-backed state, and a separate code execution service on Google Cloud Run.
+SkillUp Agent is an AI-powered skill development platform that takes a learner from profile discovery to guided learning and final readiness evaluation. It is built around three coordinated Google ADK agents, MCP tool servers, Firestore-backed state, and a separate code execution service deployed on AWS ECS (Express Mode).
 
 ## Live demo
 
-- App: [https://skillyfy-main-136795379012.asia-south1.run.app](https://skillyfy-main-136795379012.asia-south1.run.app)
+- App: AWS ECS Deployment (URL pending)
 - Repository: [https://github.com/Vipul-Intellect/Skillyfy-Agent](https://github.com/Vipul-Intellect/Skillyfy-Agent)
 
 ## What the product does
@@ -44,13 +44,13 @@ The product is designed to solve a practical problem: most platforms handle only
 
 ```text
 Browser UI
-  -> Flask API (Cloud Run)
+  -> Flask API (AWS ECS)
     -> Agent 1: Orchestrator
     -> Agent 2: Learning
     -> Agent 3: Evaluator
       -> MCP tool servers (stdio)
-      -> Firestore
-      -> Internal code execution service (Cloud Run)
+      -> Firestore / Firebase
+      -> Internal code execution service (AWS ECS)
 ```
 
 ### Agent roles
@@ -99,8 +99,8 @@ File: `agents/evaluator_agent.py`
 | MCP | Structured tool integration |
 | A2A protocol | Agent registration and message routing |
 | Flask | Main API and server-rendered web app |
-| Firestore | Sessions, progress, results, cache, and async job state |
-| Cloud Run | Main app deployment and executor deployment |
+| Firestore / Firebase | Sessions, progress, results, cache, and async job state |
+| AWS ECS | Main app deployment and executor deployment (Express Mode) |
 | YouTube Data API | Learning video retrieval |
 | RapidAPI JSearch | Job recommendation source |
 | Piston-based executor | Sandboxed multi-language code execution |
@@ -223,14 +223,16 @@ gcloud auth application-default login
 python api/flask_app.py
 ```
 
-### Deploy to Cloud Run
+### Deploy to AWS ECS
+
+The application and executor services are deployed to AWS ECS. Docker images are built and pushed to Amazon ECR.
+Refer to `.github/workflows/ecr-executor-test.yml` for the CI/CD pipeline details.
 
 ```bash
-gcloud run deploy skillyfy-main \
-  --source . \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --min-instances 0
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
+docker build -t skillup-executor ./executor_service
+docker tag skillup-executor:latest <AWS_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/skillup-executor:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/skillup-executor:latest
 ```
 
 ## Notes
