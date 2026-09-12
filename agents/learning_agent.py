@@ -78,8 +78,6 @@ Use the available MCP tools to retrieve videos, validate and execute code, gener
 and manage schedules. Prefer tool-grounded responses and keep outputs structured and concise.""",
                 tools=[self.adk_toolset],
                 generate_content_config=types.GenerateContentConfig(
-                    temperature=0.2,
-                    top_p=0.9,
                 ),
             )
             self.adk_runner = InMemoryRunner(

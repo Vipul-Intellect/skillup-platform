@@ -117,12 +117,9 @@ def _generate_json(prompt: str, schema: dict, *, max_output_tokens: int):
         model=MODEL_ID,
         contents=prompt,
         config=types.GenerateContentConfig(
-            temperature=0.1,
-            top_p=0.8,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_json_schema=schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
 
@@ -870,12 +867,9 @@ Return ONLY valid JSON (no markdown, no code blocks):
             prompt,
         ],
         config=types.GenerateContentConfig(
-            temperature=0.1,
-            top_p=0.8,
             max_output_tokens=512,
             response_mime_type="application/json",
             response_json_schema=RESUME_RESPONSE_SCHEMA,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
 

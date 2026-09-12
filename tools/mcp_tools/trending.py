@@ -173,8 +173,6 @@ Return ONLY a JSON array of skill names (no markdown, no code blocks):
         model=MODEL_ID,
         contents=prompt,
         config=types.GenerateContentConfig(
-            temperature=0.1,
-            top_p=0.8,
             max_output_tokens=96,
             response_mime_type="application/json",
             response_json_schema={
@@ -183,7 +181,6 @@ Return ONLY a JSON array of skill names (no markdown, no code blocks):
                 "minItems": 7,
                 "maxItems": 7,
             },
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
 

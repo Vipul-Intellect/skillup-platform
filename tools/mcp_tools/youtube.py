@@ -116,10 +116,8 @@ Constraints:
 - Excluded topics: {excluded_clause}
 - Return only topics, no explanations.""",
             config=types.GenerateContentConfig(
-                temperature=0.2,
                 response_mime_type="application/json",
-                response_schema=schema,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                response_json_schema=schema,
                 http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
             ),
         )
@@ -381,8 +379,7 @@ Return structured evaluations scoring each out of 10."""
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=schema,
-                temperature=0.2,
+                response_json_schema=schema,
             ),
         )
         data = json.loads(response.text)

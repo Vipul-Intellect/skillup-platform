@@ -46,10 +46,8 @@ Start with fundamentals and move toward applied practice.
 Keep each topic concise and practical.
 Return only the topics.""",
         config=types.GenerateContentConfig(
-            temperature=0.2,
             response_mime_type="application/json",
-            response_schema=schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            response_json_schema=schema,
             http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
         ),
     )

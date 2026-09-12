@@ -242,10 +242,8 @@ Rules:
 - Hint 3 must give structure without giving away the full solution.
 - Keep the difficulty aligned to the learner level.""",
                 config=types.GenerateContentConfig(
-                    temperature=0.2,
                     response_mime_type="application/json",
-                    response_schema=schema,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    response_json_schema=schema,
                     http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
                 ),
             )
@@ -558,10 +556,8 @@ Be concise and constructive.
 Inputs:
 {json.dumps(rubric_input, indent=2)}""",
             config=types.GenerateContentConfig(
-                temperature=0.1,
                 response_mime_type="application/json",
-                response_schema=schema,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                response_json_schema=schema,
                 http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
             ),
         )
@@ -656,10 +652,8 @@ Rules:
             model="gemini-3.6-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.2,
                 response_mime_type="application/json",
-                response_schema=schema,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                response_json_schema=schema,
                 http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
             ),
         )
@@ -781,10 +775,8 @@ Rules:
 - Include one very small code example.
 - End with one practical next step.""",
             config=types.GenerateContentConfig(
-                temperature=0.2,
                 response_mime_type="application/json",
-                response_schema=schema,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                response_json_schema=schema,
                 http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
             ),
         )

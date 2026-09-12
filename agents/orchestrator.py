@@ -86,8 +86,6 @@ skill-gap discovery, and assessment validation tasks. Always prefer tool-grounde
 over unsupported free-form responses.""",
                 tools=[self.adk_toolset],
                 generate_content_config=types.GenerateContentConfig(
-                    temperature=0.1,
-                    top_p=0.9,
                 ),
             )
             self.adk_runner = InMemoryRunner(

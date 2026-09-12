@@ -77,8 +77,6 @@ assess readiness, and fetch job recommendations. Prefer tool-grounded results an
 keep outputs structured and practical.""",
             tools=[self.adk_toolset],
             generate_content_config=types.GenerateContentConfig(
-                temperature=0.2,
-                top_p=0.9,
             ),
         )
         self.adk_runner = InMemoryRunner(agent=self.adk_agent, app_name=self.adk_app_name)

@@ -73,7 +73,6 @@ Return structured JSON evaluating if it is VALID or INVALID."""
             config={
                 'response_mime_type': 'application/json',
                 'response_schema': GeminiValidationResult,
-                'temperature': 0.1,
             },
         )
         

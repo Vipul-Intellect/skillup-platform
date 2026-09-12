@@ -119,12 +119,9 @@ def _generate_json_now(prompt: str, schema: dict, *, max_output_tokens: int) -> 
         model=MODEL_ID,
         contents=prompt,
         config=types.GenerateContentConfig(
-            temperature=0.2,
-            top_p=0.9,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_json_schema=schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
             http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
         ),
     )

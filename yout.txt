@@ -1,0 +1,457 @@
+You are acting as a SENIOR AI ENGINEER responsible for making a production-grade change to the existing SkillUp platform.
+
+Your task is to implement the finalized YouTube educational recommendation improvement.
+
+IMPORTANT: DO NOT START CODING IMMEDIATELY.
+
+First inspect the ACTUAL current repository code and understand the existing implementation. Do not rely on assumptions, previous versions, filenames from memory, or imagined code. The repository state is the only source of truth for implementation details.
+
+==================================================
+NON-NEGOTIABLE ENGINEERING RULES
+==================================================
+
+1. NO HALLUCINATIONS.
+   - Never invent existing functions, files, API fields, variables, routes, schemas, or frontend behavior.
+   - If something is not present in the repository, verify before using it.
+   - If something is unclear, inspect the relevant code.
+
+2. NO UNNECESSARY CHANGES.
+   - Do not refactor unrelated code.
+   - Do not rename existing APIs unnecessarily.
+   - Do not replace working architecture.
+   - Do not introduce new services, databases, agents, vector databases, transcript pipelines, or frameworks unless the existing implementation proves they are essential.
+   - Preserve the current architecture wherever it already satisfies the requirement.
+
+3. PRESERVE EXISTING FUNCTIONALITY.
+   The existing SkillUp learning flow must continue to work:
+   
+   Skill
+   → validated learner level
+   → AI-generated topics
+   → selected topic
+   → video recommendations
+   → video selection
+   → existing practice flow
+
+   Do not redesign this flow.
+
+4. DO NOT ADD ANOTHER MANDATORY USER INPUT.
+   Topics already exist in the current UI and recommendation request.
+   Do not add another topic selector.
+   Learning objective may be treated as an optional signal only if the current system already provides usable objective information.
+
+5. DO NOT ADD ANOTHER DURATION CONTROL.
+   The existing preferred-duration functionality must remain the user's duration preference.
+   Do not create a second duration selector or duplicate scheduling control.
+
+6. BACKEND MUST REMAIN THE SOURCE OF TRUTH FOR RECOMMENDATION RANKING.
+   The frontend must NOT independently rank videos or calculate recommendation scores.
+
+7. DO NOT USE POPULARITY AS THE PRIMARY RECOMMENDATION METHOD.
+   Views/likes may only be supporting engagement signals.
+   They must not dominate educational relevance.
+
+8. DO NOT TURN ALL RECOMMENDATION FACTORS INTO HARD FILTERS.
+   Use hard eligibility only where necessary.
+   The remaining factors should contribute to ranking.
+
+9. DO NOT REQUIRE A TRANSCRIPT PIPELINE.
+   Do not introduce mandatory transcript downloading/processing.
+   YouTube metadata available through the existing implementation should be used unless inspection proves additional data is already available.
+
+10. DO NOT CHANGE THE MCP/ADK ARCHITECTURE.
+    Continue using the existing architecture and MCP integration unless the actual repository proves a specific change is required for this feature.
+
+11. Do not modify unrelated agents, executor service, deployment configuration, authentication, Firestore architecture, or CI/CD.
+
+12. Do not write code until the repository inspection and implementation plan are complete.
+
+==================================================
+FINAL RECOMMENDATION DESIGN
+==================================================
+
+The goal is to improve the current YouTube recommendation system from basic curated/popularity-based selection into a topic- and learner-aware educational recommendation system.
+
+The final recommendation factors are:
+
+1. TOPIC / SKILL MATCH
+   - Very high importance.
+   - The video must be relevant to the currently selected Skill/topic.
+
+2. CONCEPT COVERAGE
+   - Very high importance.
+   - Prefer videos that cover the concepts relevant to the selected topic.
+
+3. LEARNER-LEVEL FIT
+   - High importance.
+   - The recommendation should fit the learner's current validated level already available in SkillUp.
+
+4. LEARNING OBJECTIVE MATCH
+   - Conditional/optional.
+   - Use only when a meaningful learning objective is already available from the existing flow.
+   - Do NOT add a new mandatory objective input merely for this feature.
+
+5. CONTENT FOCUS / SCOPE
+   - Medium-high importance.
+   - Prefer focused educational content rather than videos that are too broad, unrelated, or overly shallow for the selected topic.
+   - Existing preferred-duration information can contribute to this fit.
+   - Do not create a second duration system.
+
+6. SOURCE / EDUCATIONAL QUALITY
+   - Medium importance.
+   - Trusted/educational sources can receive a positive signal.
+   - IMPORTANT: trusted channels are NOT a hard whitelist.
+   - Do not restrict recommendations to a static channel list.
+
+7. TECHNICAL FRESHNESS / VALIDITY
+   - Medium importance.
+   - Prefer technically current and valid content where metadata/content evidence supports that conclusion.
+   - Do not pretend that metadata can prove technical correctness when it cannot.
+
+8. ENGAGEMENT
+   - Low importance.
+   - Views/likes may be supporting evidence only.
+   - They must not override topic relevance, concept coverage, or learner-level fit.
+
+==================================================
+RECOMMENDATION PIPELINE
+==================================================
+
+Implement this conceptual flow while adapting it precisely to the existing code:
+
+Existing Skill/topic + learner level
++ optional existing learning objective
++ existing preferred duration/language information if available
+        ↓
+YouTube candidate retrieval
+        ↓
+Candidate videos
+        ↓
+HARD ELIGIBILITY
+        ↓
+- topic/skill relevance
+- language compatibility when explicitly applicable
+- learner-level compatibility
+- basic usability/availability
+        ↓
+SEMANTIC EVALUATION
+        ↓
+- concept coverage
+- optional learning-objective match
+- content focus/scope
+- source/educational quality
+- technical freshness
+- engagement as supporting signal
+        ↓
+BACKEND DETERMINISTIC LEARNING-FIT SCORE
+        ↓
+RANK
+        ↓
+RETURN BEST RESULTS
+        ↓
+FRONTEND DISPLAYS THEM
+
+IMPORTANT:
+Do not ask the LLM to be the final authority for the numeric recommendation score.
+
+Use semantic/LLM evaluation only to obtain structured evidence/signals where appropriate.
+The backend should deterministically calculate the final Learning Fit Score from those signals.
+
+The exact implementation must be based on the existing repository and its current APIs/data structures.
+
+==================================================
+FINAL FRONTEND REQUIREMENT
+==================================================
+
+Keep the current video card functionality and add only the information necessary to make the recommendation understandable.
+
+Each recommended video should display:
+
+- Existing thumbnail
+- Existing title
+- Existing channel name
+- Existing duration
+- Existing source badge where applicable
+- SHORT DESCRIPTION
+  - approximately 1–2 concise lines
+  - do not dump the entire YouTube description
+
+- CONCEPTS COVERED
+  - approximately 3–5 relevant concepts
+
+- LEARNING FIT SCORE
+  - e.g. 94/100
+  - this must come from the backend
+
+- WHY RECOMMENDED
+  - approximately 2–3 concise reasons
+  - reasons must be based on actual recommendation evidence
+  - do not generate generic marketing text
+
+Keep:
+- Watch on YouTube
+- Use for Practice
+- Existing video selection/practice behavior
+
+Do NOT add:
+- another duration selector
+- channel selector
+- popularity filters
+- 8-factor configuration panel
+- mandatory learning-objective field
+- complex user-facing recommendation controls
+
+==================================================
+RESULT COUNT / LOAD MORE
+==================================================
+
+The initial UI should display 6 videos at a time.
+
+Provide a "Load more" mechanism if the existing architecture supports it cleanly.
+
+Important:
+The frontend must NOT perform ranking.
+
+When loading more:
+- backend should retrieve/evaluate additional candidates
+- backend should return the next best non-duplicate results
+- frontend only renders the returned results
+
+Do not introduce pagination complexity if the existing backend/API cannot support it cleanly without unnecessary architectural changes. Inspect first and implement the smallest correct solution.
+
+==================================================
+BACKEND RESPONSE CONTRACT
+==================================================
+
+Preserve the existing response schema as much as possible.
+
+Only add the fields genuinely required for the improved UI/recommendation behavior.
+
+The target conceptual response is:
+
+{
+  "videos": [
+    {
+      "video_id": "...",
+      "title": "...",
+      "thumbnail": "...",
+      "channel_name": "...",
+      "url": "...",
+      "duration": "...",
+      "description": "...",
+      "learning_fit_score": 94,
+      "concepts_covered": [
+        "...",
+        "...",
+        "..."
+      ],
+      "why_recommended": [
+        "...",
+        "...",
+        "..."
+      ]
+    }
+  ],
+  "has_more": true,
+  "next_page": "..."
+}
+
+BUT:
+This is a TARGET CONTRACT, NOT AN INSTRUCTION TO BLINDLY REPLACE THE EXISTING API.
+
+First inspect the current `/api/videos` request and response schema.
+
+Preserve all existing fields that existing frontend/backend functionality depends on.
+
+Only introduce fields that are actually necessary.
+
+If the current API already has equivalent fields, reuse them rather than duplicating them.
+
+==================================================
+IMPLEMENTATION MUST BE DONE IN TWO PHASES
+==================================================
+
+PHASE 1 — BACKEND FIRST
+
+Before modifying anything:
+
+1. Inspect the actual current YouTube recommendation implementation.
+2. Identify:
+   - current `/api/videos` route
+   - current YouTube MCP tool/function
+   - candidate retrieval logic
+   - current curation logic
+   - current popularity/ranking logic
+   - existing request fields
+   - existing response fields
+   - how skill/topic/level/duration reach the backend
+   - how Gemini is currently used, if applicable
+   - how MCP is currently involved
+3. Trace the complete current backend flow.
+4. Identify the SMALLEST set of backend files that must change.
+
+Then implement only the required backend changes.
+
+Backend responsibilities:
+- retrieve broader relevant candidates where the current implementation permits
+- perform hard eligibility
+- evaluate educational relevance using structured signals
+- calculate deterministic Learning Fit Score
+- rank candidates
+- generate/store the evidence needed for the UI
+- preserve existing API compatibility
+- support the existing practice flow
+- support additional candidates/load-more only if cleanly possible
+
+After backend implementation:
+
+5. Run syntax/import checks.
+6. Run relevant existing tests.
+7. Test the `/api/videos` response using realistic inputs.
+8. Verify:
+   - selected topic is actually used
+   - learner level is actually used
+   - popularity does not dominate
+   - score is deterministic from returned signals
+   - response contains all required UI data
+   - existing response fields remain compatible
+   - no duplicate videos are introduced
+   - existing fallback behavior still works where applicable
+
+STOP AND REVIEW THE BACKEND BEFORE TOUCHING FRONTEND.
+
+==================================================
+PHASE 2 — FRONTEND SECOND
+==================================================
+
+Only after Phase 1 backend behavior is verified:
+
+1. Inspect the actual current video-library rendering code.
+2. Identify the exact existing video-card rendering path.
+3. Identify the existing API response handling.
+4. Modify only the required frontend code.
+
+Frontend must:
+- render the backend-provided description
+- render concepts covered
+- render Learning Fit Score
+- render Why Recommended
+- preserve existing title/channel/duration/source/thumbnail
+- preserve Watch on YouTube
+- preserve Use for Practice
+- preserve current topic-selection flow
+- preserve current duration preference
+- initially show 6 videos
+- implement Load More only if supported cleanly by the verified backend contract
+- never calculate/rank recommendation scores itself
+
+Do not add unrelated UI redesigns.
+
+==================================================
+FINAL COMPATIBILITY / INTEGRATION CHECK
+==================================================
+
+After BOTH backend and frontend changes are complete, perform a final compatibility audit.
+
+Do not assume compatibility merely because both sides compile.
+
+Verify the complete chain:
+
+Existing UI inputs
+        ↓
+Frontend `/api/videos` request
+        ↓
+Flask route
+        ↓
+Existing recommendation/MCP/YouTube path
+        ↓
+Candidate evaluation
+        ↓
+Backend deterministic ranking
+        ↓
+Backend JSON response
+        ↓
+Frontend response parsing
+        ↓
+Video cards
+        ↓
+Watch on YouTube / Use for Practice
+
+Specifically verify:
+
+1. Request field names match exactly.
+2. Response field names match exactly.
+3. Data types match exactly.
+4. Missing/optional fields are handled safely.
+5. Existing fields are not accidentally removed.
+6. Existing fallback/error behavior still works.
+7. Existing video selection state still works.
+8. Existing Use for Practice flow still receives valid video data.
+9. Load More does not create duplicates.
+10. Frontend never performs recommendation ranking.
+11. Backend score is the displayed score.
+12. The UI reasons correspond to actual backend recommendation signals.
+13. No unrelated application behavior was changed.
+14. No new dependency was added unless genuinely required.
+15. No existing dependency was upgraded/downgraded unnecessarily.
+16. No API breaking change was introduced.
+
+==================================================
+VALIDATION STANDARD
+==================================================
+
+Before declaring success, test the actual implementation.
+
+At minimum verify:
+
+A. Backend imports successfully.
+B. YouTube recommendation path executes successfully.
+C. `/api/videos` returns the expected structure.
+D. At least one realistic recommendation request completes.
+E. Frontend builds/loads successfully.
+F. Browser-side response parsing works with the actual backend response.
+G. Video cards render without JavaScript errors.
+H. Existing Watch on YouTube works.
+I. Existing Use for Practice works.
+J. Load More, if implemented, works without duplicates.
+K. Existing application behavior outside this feature is unchanged.
+
+If any test fails:
+- identify the actual root cause
+- make the smallest necessary correction
+- retest
+- do not compensate with unrelated architectural changes.
+
+==================================================
+CHANGE DISCIPLINE
+==================================================
+
+For every changed file, be able to explain:
+
+1. Why this file had to change.
+2. What exact behavior changed.
+3. Why the change is necessary for the finalized recommendation design.
+4. Why the change does not break existing functionality.
+
+At the end provide:
+
+1. Files inspected.
+2. Files changed.
+3. Files deliberately NOT changed and why.
+4. Backend changes.
+5. Frontend changes.
+6. Compatibility verification results.
+7. Tests/checks executed and their results.
+8. Any remaining limitation that is supported by actual repository evidence.
+
+Do NOT claim something was tested if it was not actually tested.
+
+Do NOT claim a file contains something unless you inspected it.
+
+Do NOT silently make architectural decisions beyond this specification.
+
+Most important:
+ACT AS A SENIOR AI ENGINEER.
+Prefer correctness, traceability, production reliability, and minimal changes over complexity.
+
+DO NOT START CODING UNTIL YOU HAVE INSPECTED THE CURRENT REPOSITORY AND IDENTIFIED THE EXACT BACKEND AND FRONTEND FILES THAT REQUIRE CHANGES.
