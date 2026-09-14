@@ -560,7 +560,7 @@ function renderEvaluation() {
     const result = state.evaluationResult;
     
     const roleHtml = state.targetRole ? `<div class="mini-kv-item"><span class="summary-label">Target Role</span><strong>${esc(state.targetRole)}</strong></div>` : "";
-    const summaryHtml = `<div class="mini-kv"><div class="mini-kv-item"><span class="summary-label">Skill</span><strong>${esc(state.selectedSkill || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Topic</span><strong>${esc(state.selectedTopic || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Level</span><strong>${esc(state.validatedLevel || state.declaredLevel || "N/A")}</strong></div>${roleHtml}</div>`;
+    const summaryHtml = `<div class="mini-kv"><div class="mini-kv-item"><span class="summary-label">Skill</span><strong>${esc(state.selectedSkill || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Topic</span><strong>${esc(state.selectedTopic || "N/A")}</strong></div><div class="mini-kv-item"><span class="summary-label">Level</span><strong>${esc(learnLevel() || "N/A")}</strong></div>${roleHtml}</div>`;
 
     const hasProgress = state.scheduleChoice === "create" && state.schedule && typeof state.schedule.progress_percentage !== 'undefined';
     const progressVal = hasProgress ? Math.min(100, Math.max(0, parseInt(state.schedule.progress_percentage))) : 0;
@@ -1005,7 +1005,7 @@ async function handleValidateCode() {
             state.validationOutput = "Validating code...";
             renderCode();
             const data = await api("/api/validate-code", { method: "POST", body: { code: state.code, language: state.currentLanguage } });
-            state.validationOutput = data.valid ? `Valid ${data.language} code.` : `Issues found:\n${(data.errors || []).join("\n")}`;
+            state.validationOutput = data.valid ? `Valid ${data.language} code.` : `Issues found:\n${(data.errors || []).map(e => e.line != null ? \`Line ${e.line}: ${e.message}\` : e.message).join("\n")}`;
             renderCode();
         } catch (error) {
             state.validationOutput = `Validation failed.\n${error.message}`;
