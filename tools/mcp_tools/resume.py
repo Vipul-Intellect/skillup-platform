@@ -11,6 +11,7 @@ from io import BytesIO
 from PyPDF2 import PdfReader
 from google import genai
 from google.genai import types
+from utils.gemini_client_pool import PooledGemini
 
 from config.settings import settings
 from database.firestore_client import (
@@ -105,10 +106,7 @@ SKILL_ALIASES = {
 def _get_client():
     global client
     if client is None:
-        client = genai.Client(
-            api_key=settings.GEMINI_API_KEY,
-            http_options=HTTP_OPTIONS,
-        )
+        client = PooledGemini()
     return client
 
 
@@ -120,6 +118,7 @@ def _generate_json(prompt: str, schema: dict, *, max_output_tokens: int):
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_json_schema=schema,
+            http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
         ),
     )
 
@@ -870,6 +869,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
             max_output_tokens=2048,
             response_mime_type="application/json",
             response_json_schema=RESUME_RESPONSE_SCHEMA,
+            http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
         ),
     )
 

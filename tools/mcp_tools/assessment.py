@@ -3,6 +3,7 @@ from google.genai import types
 from config.settings import settings
 from database.firestore_client import get_session
 from utils.logger import get_logger
+from utils.gemini_client_pool import PooledGemini
 import json
 
 logger = get_logger(__name__)
@@ -53,10 +54,7 @@ LEVEL_SCHEMA = {
 def _get_client():
     global client
     if client is None:
-        client = genai.Client(
-            api_key=settings.GEMINI_API_KEY,
-            http_options=HTTP_OPTIONS,
-        )
+        client = PooledGemini()
     return client
 
 

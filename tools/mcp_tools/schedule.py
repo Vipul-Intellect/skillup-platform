@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 
 from config.settings import settings
+from utils.gemini_client_pool import PooledGemini
 from database.firestore_client import get_session, save_session
 from utils.logger import get_logger
 
@@ -19,7 +20,7 @@ def _get_client():
     global _client
     with _client_lock:
         if _client is None:
-            _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            _client = PooledGemini()
         return _client
 
 

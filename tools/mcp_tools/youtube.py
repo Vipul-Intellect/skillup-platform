@@ -10,6 +10,7 @@ from google.genai import types
 
 from config.settings import settings
 from utils.logger import get_logger
+from utils.gemini_client_pool import PooledGemini
 
 logger = get_logger(__name__)
 
@@ -32,7 +33,7 @@ _gemini_client = None
 def _get_gemini_client():
     global _gemini_client
     if _gemini_client is None:
-        _gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        _gemini_client = PooledGemini()
     return _gemini_client
 
 

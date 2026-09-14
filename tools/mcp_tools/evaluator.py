@@ -13,6 +13,7 @@ from database.firestore_client import (
     get_session,
     set_cache,
 )
+from utils.gemini_client_pool import PooledGemini
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -110,7 +111,7 @@ CORE_EVALUATION_SCHEMA = {
 def _get_client():
     global _client
     if _client is None:
-        _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        _client = PooledGemini()
     return _client
 
 

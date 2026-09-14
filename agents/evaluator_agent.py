@@ -19,6 +19,7 @@ from mcp.client.stdio import stdio_client
 from a2a.protocol import A2AMessage, A2AProtocol, a2a_protocol
 from config.settings import settings
 from database.firestore_client import get_result, get_session, save_result, save_session
+from utils.gemini_client_pool import PooledGemini
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -44,7 +45,6 @@ class EvaluatorAgent:
     """
 
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model_id = "gemini-3.6-flash"
 
         self.server_params = StdioServerParameters(
@@ -68,7 +68,7 @@ class EvaluatorAgent:
         self.adk_toolset = McpToolset(connection_params=self.adk_connection_params)
         self.adk_agent = LlmAgent(
             name="evaluator",
-            model=self.model_id,
+            model=PooledGemini(model=self.model_id),
             description="SkillUp evaluator agent for assessments, readiness scoring, and jobs.",
             instruction="""You are the SkillUp evaluator agent.
 

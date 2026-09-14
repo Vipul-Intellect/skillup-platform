@@ -17,6 +17,7 @@ from mcp.client.stdio import stdio_client
 from utils.logger import get_logger
 from config.settings import settings
 from a2a.protocol import A2AMessage, A2AProtocol, a2a_protocol
+from utils.gemini_client_pool import PooledGemini
 
 logger = get_logger(__name__)
 
@@ -35,8 +36,7 @@ def _child_process_env() -> dict:
 class OrchestratorAgent:
     def __init__(self):
         try:
-            # Gemini SDK client used by the underlying ADK runtime and fallback flows.
-            self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            # Gemini model used by the underlying ADK runtime and fallback flows.
             self.model_id = "gemini-3.6-flash"
             
             # MCP Server Parameters (stdio connection with absolute path)
@@ -77,7 +77,7 @@ class OrchestratorAgent:
             )
             self.adk_agent = LlmAgent(
                 name="orchestrator",
-                model=self.model_id,
+                model=PooledGemini(model=self.model_id),
                 description="Primary SkillUp orchestrator agent coordinating skill discovery and validation workflows.",
                 instruction="""You are the primary SkillUp orchestrator agent.
 

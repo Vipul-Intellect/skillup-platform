@@ -16,6 +16,7 @@ from mcp.client.stdio import stdio_client
 from a2a.protocol import A2AMessage, A2AProtocol, a2a_protocol
 from config.settings import settings
 from database.firestore_client import get_session, save_progress, save_session
+from utils.gemini_client_pool import PooledGemini
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -44,7 +45,6 @@ class LearningAgent:
 
     def __init__(self):
         try:
-            self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
             self.model_id = "gemini-3.6-flash"
 
             self.server_params = StdioServerParameters(
@@ -70,7 +70,7 @@ class LearningAgent:
             )
             self.adk_agent = LlmAgent(
                 name="learning",
-                model=self.model_id,
+                model=PooledGemini(model=self.model_id),
                 description="SkillUp learning agent for videos, practice, hints, and schedules.",
                 instruction="""You are the SkillUp learning agent.
 

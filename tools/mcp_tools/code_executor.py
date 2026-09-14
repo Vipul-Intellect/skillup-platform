@@ -51,8 +51,8 @@ def _is_environment_error(result: dict) -> bool:
 
 def _gemini_fallback_validation(code: str, language: str, context: dict) -> dict:
     try:
-        from google import genai
-        client = genai.Client()
+        from utils.gemini_client_pool import PooledGemini
+        client = PooledGemini()
         
         prompt = f"""You are a strict code validator.
 Does this code satisfy the student's task requirement based on the context?

@@ -8,6 +8,7 @@ from google.genai import types
 
 from config.settings import settings
 from database.firestore_client import get_cache, set_cache
+from utils.gemini_client_pool import PooledGemini
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,10 +27,7 @@ _cache_executor = concurrent.futures.ThreadPoolExecutor(
 def _get_client():
     global client
     if client is None:
-        client = genai.Client(
-            api_key=settings.GEMINI_API_KEY,
-            http_options=HTTP_OPTIONS,
-        )
+        client = PooledGemini()
     return client
 
 
@@ -181,6 +179,7 @@ Return ONLY a JSON array of skill names (no markdown, no code blocks):
                 "minItems": 7,
                 "maxItems": 7,
             },
+            http_options=types.HttpOptions(timeout=settings.API_TIMEOUT * 1000),
         ),
     )
 
