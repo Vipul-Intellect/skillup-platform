@@ -1005,7 +1005,7 @@ async function handleValidateCode() {
             state.validationOutput = "Validating code...";
             renderCode();
             const data = await api("/api/validate-code", { method: "POST", body: { code: state.code, language: state.currentLanguage } });
-            state.validationOutput = data.valid ? `Valid ${data.language} code.` : `Issues found:\n${(data.errors || []).map(e => e.line != null ? \`Line ${e.line}: ${e.message}\` : e.message).join("\n")}`;
+            state.validationOutput = data.valid ? `Valid ${data.language} code.` : `Issues found:\n${(data.errors || []).map(e => e.line != null ? `Line ${e.line}: ${e.message}` : e.message).join("\n")}`;
             renderCode();
         } catch (error) {
             state.validationOutput = `Validation failed.\n${error.message}`;
