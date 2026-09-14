@@ -37,7 +37,7 @@ class OrchestratorAgent:
     def __init__(self):
         try:
             # Gemini model used by the underlying ADK runtime and fallback flows.
-            self.model_id = "gemini-3.6-flash"
+            self.model_id = "gemini-3.7-flash"
             
             # MCP Server Parameters (stdio connection with absolute path)
             self.server_params = StdioServerParameters(

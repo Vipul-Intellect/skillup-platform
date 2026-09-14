@@ -45,7 +45,7 @@ class LearningAgent:
 
     def __init__(self):
         try:
-            self.model_id = "gemini-3.6-flash"
+            self.model_id = "gemini-3.8-flash"
 
             self.server_params = StdioServerParameters(
                 command=sys.executable,

@@ -120,6 +120,8 @@ class PooledGemini(Gemini):
     async def generate_content_async(self, llm_request, stream: bool = False):
         failed_by_this_generation: set[int] = set()
         last_error = None
+        original_model = getattr(llm_request, "model", None)
+        current_model = original_model
 
         for attempt in range(pool.size):
             slot, client = pool.select_active()
@@ -142,6 +144,8 @@ class PooledGemini(Gemini):
 
             token = _active_client_ctx.set(client)
             try:
+                if hasattr(llm_request, "model"):
+                    llm_request.model = current_model
                 # Delegate to the ADK generate_content_async logic
                 async for resp in super().generate_content_async(llm_request, stream):
                     yield resp
@@ -167,8 +171,33 @@ class PooledGemini(Gemini):
                     raise e  # Propagate final error
 
             except APIError as e:
+                # 503 fallback for Learning Agent
+                if current_model == "gemini-3.8-flash" and getattr(e, "code", None) == 503:
+                    logger.warning("Learning Agent 3.8-flash 503 fallback triggered to 3.7-flash")
+                    current_model = "gemini-3.7-flash"
+                    if hasattr(llm_request, "model"):
+                        llm_request.model = current_model
+                    try:
+                        async for resp in super().generate_content_async(llm_request, stream):
+                            yield resp
+                        return
+                    except _ResourceExhaustedError as fallback_e:
+                        failed_by_this_generation.add(slot)
+                        last_error = fallback_e
+                        logger.warning(
+                            "Gemini 429 on slot %d, attempt %d/%d (fallback)", 
+                            slot, attempt + 1, pool.size
+                        )
+                        pool.handle_failure(slot)
+                        if slot == pool.size - 1:
+                            logger.error("Reached end of Gemini client pool (slot %d) for this generation", slot)
+                            raise fallback_e
+                        continue
+                        
                 # Preserve existing error propagation for non-429 (400, 401, 403, 404, etc.)
                 raise e
 
             finally:
+                if original_model is not None and hasattr(llm_request, "model"):
+                    llm_request.model = original_model
                 _active_client_ctx.reset(token)
