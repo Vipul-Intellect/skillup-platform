@@ -4,7 +4,7 @@ SkillUp Agent is an AI-powered skill development platform that takes a learner f
 
 ## Live demo
 
-- App: AWS ECS Deployment (URL pending)
+- App: AWS ECS Deployment (https://sk-b5b7e4257ba84ec1bc710fd01f093e72.ecs.ap-south-1.on.aws/)
 - Repository: [https://github.com/Vipul-Intellect/Skillyfy-Agent](https://github.com/Vipul-Intellect/Skillyfy-Agent)
 
 ## What the product does
